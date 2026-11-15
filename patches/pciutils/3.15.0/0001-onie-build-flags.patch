@@ -1,0 +1,17 @@
+Preserve ONIE cross compilation and target flags.
+
+SPDX-License-Identifier: GPL-2.0
+
+--- a/Makefile
++++ b/Makefile
+@@ -3,6 +3,10 @@
+ 
+ OPT=-O2
+ CFLAGS=$(OPT) -Wall -W -Wno-parentheses -Wstrict-prototypes -Wmissing-prototypes
++
++# ONIE build environment changes
++CFLAGS  += $(ONIE_CFLAGS)
++LDFLAGS += $(ONIE_LDFLAGS)
+ 
+ VERSION=3.15.0
+ DATE=2026-04-05

@@ -1,0 +1,18 @@
+From: ONIE maintainers
+Subject: [PATCH] loader/bsd: return an explicit error when metadata allocation fails
+
+On failure the output pointer is not assigned. Return a guaranteed nonzero
+error instead of relying on global grub_errno, so GCC 14 can prove that
+successful callers always receive an initialized metadata pointer.
+
+--- a/grub-core/loader/i386/bsd.c
++++ b/grub-core/loader/i386/bsd.c
+@@ -225,7 +225,7 @@
+ 
+   newtag = grub_malloc (len + sizeof (struct bsd_tag));
+   if (!newtag)
+-    return grub_errno;
++    return grub_error (GRUB_ERR_OUT_OF_MEMORY, "cannot allocate BSD metadata");
+   newtag->len = len;
+   newtag->type = type;
+   newtag->next = NULL;

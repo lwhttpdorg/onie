@@ -13,10 +13,10 @@
 # This is a makefile fragment that defines the build of grub
 #
 
-GRUB_VERSION		= 2.04
+GRUB_VERSION		= 2.14
 GRUB_TARBALL		= grub-$(GRUB_VERSION).tar.xz
-GRUB_TARBALL_URLS	+= $(ONIE_MIRROR) http://ftp.gnu.org/gnu/grub \
-			   http://mirrors.kernel.org/gnu/grub
+GRUB_TARBALL_URLS	+= $(ONIE_MIRROR) https://ftp.gnu.org/gnu/grub \
+			   https://mirrors.kernel.org/gnu/grub
 GRUB_BUILD_DIR		= $(USER_BUILDDIR)/grub
 GRUB_DIR		= $(GRUB_BUILD_DIR)/grub-$(GRUB_VERSION)
 GRUB_I386_DIR		= $(GRUB_BUILD_DIR)/grub-i386-pc

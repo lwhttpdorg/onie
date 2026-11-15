@@ -1,131 +1,37 @@
-# Docker based ONIE Build Environment
+# ONIE Docker build environment (Debian 13)
 
-This Dockerfile creates a Debian 9 (stretch) build environment for
-ONIE.  The goal is to access a shell session as the 'build' user
-within the container environment and compile ONIE images.
+From the ONIE fork's repository root, with Docker installed and available to
+your user:
 
-This example also clarifies how Docker could be used in a build
-workflow.
-
-Docker allows you to package an entire Linux environment into units
-called containers. Containers utilise [control
-groups](https://en.wikipedia.org/wiki/Cgroups "Wikipedia Cgroups"), a
-resource isolation & management feature of the Linux kernel, to
-execute their processes with allowances specific to their control
-group.
-
-## Container Preparation
-
-Install docker.io on your host system.  This varies by distribution,
-but for a Debian based system this looks like:
-```
-user@host:~$ sudo apt-get update
-user@host:~$ sudo apt-get install docker.io
+```sh
+make MODEL=g30w build
+make MODEL=as7326-56x build
 ```
 
-You may need to add your user id to the `docker` group.
-```
-user@host:~$ sudo adduser $USER docker
-```
+`g30w` uses `machine/bkhd/bkhd_g30w`; `as7326-56x` uses the upstream Accton
+machine. The default is `g30w`. For another upstream platform, use
+`make ONIE_MACHINE=kvm_x86_64 ONIE_MACHINEROOT= build`. Set `JOBS` to override
+the detected number of parallel jobs.
 
-For that to take effect you have to logout and login again.
-Alternatively use `su - $USER` to avoid logging out.
+The tool image installs the build dependencies once. A project-scoped,
+persistent container is created with the checkout mounted **read-only** at
+`/src`. Before each build, `rsync` updates a separate writable `/build/onie`
+ tree in that container, including Git metadata for ONIE release tags;
+ `/build/onie/build` and other generated files are excluded from synchronization
+ and remain cached. ONIE compilation runs as the
+non-root `build` user (required by crosstool-NG). After each operation, the
+container stops. Completed images are copied to the host's `targets/<machine>`.
 
-Build the image using Docker.  From the same directory as the
-Dockerfile run this:
-```
-user@host:~/src/onie/contrib/build-env$ docker build -t debian:build-env .
-```
+`make download` prepares downloads without building images, `make clean`
+clears upstream build files in the existing container, and `make distclean`
+deletes the persistent container, tool image, and exported host images without
+first rebuilding the tool image. Modifying the Dockerfile recreates the
+container and invalidates its build cache.
 
-> Note: Should you want to rebuild the docker image after changing the
-> Dockerfile do this:
-* `docker stop onie`
-* `docker rm onie`
-
-Then run `docker build ...` again.
-
-Create a build directory on the host system that will be accessible
-from within the docker container.  Make sure the directory is
-write-able by the docker `build` user.
-
-```
-user@host:~$ mkdir --mode=0777 -p ${HOME}/src
-```
-
-This directory will be availabe from within the container as
-`/home/build/src`.
-
-## Login to Container
-
-Create a container from this image, and attach your terminal onto it.
-
-```
-user@host:~$ docker run -it -v ${HOME}/src:/home/build/src --name onie debian:build-env
-```
-
-The name of this container is `onie`.  You can use this name with the
-docker commands.
-
-After run the container, you should see a prompt that looks similar to
-this:
-
-```
-build@f1063a996da6:~$
-```
-
-> Note: Should you find yourself detached from your container
-> instance, you can use `docker attach onie` to re-attach onto a
-> running container.
-
-## Build Preparation
-As the `build` user, clone the ONIE repo using the provided
-`clone-onie` script:
-
-```
-build@f1063a996da6:~$ ./clone-onie
-```
-
-This clones the ONIE repo into `/home/build/src/onie`.
-
-Navigate to the ONIE build-config directory.
-
-```
-build@f1063a996da6:~$ cd src/onie/build-config
-build@f1063a996da6:~/src/onie/build-config$
-```
-
-## Building ONIE
-You are now ready to follow a target's build steps from the ONIE repository.
-
-Please review the 'INSTALL' file within a directory you'll find [here](https://github.com/opencomputeproject/onie/tree/master/machine "onie/machines").
-
-* For a KVM build: `make -j4 MACHINE=kvm_x86_64 all`
-
-* For an Accton platform: `make -j4 MACHINEROOT=../machine/accton MACHINE=accton_as7816_64x all`
-
-On the host system the ONIE build products are available in
-`${HOME}/src/onie/build/images`.
-
-```
-user@host:~$ ls -l ${HOME}/src/onie/build/images
-total 55116
--rw-r--r-- 1 1000 1000  7557500 Apr  4 12:37 kvm_x86_64-r0.initrd
--rw-r--r-- 1 1000 1000  3917760 Apr  4 12:35 kvm_x86_64-r0.vmlinuz
--rw-r--r-- 1 1000 1000  3915856 Apr  4 12:35 kvm_x86_64-r0.vmlinuz.unsigned
--rw-r--r-- 1 1000 1000 28704768 Apr  4 12:38 onie-recovery-x86_64-kvm_x86_64-r0.iso
--rw-r--r-- 1 1000 1000 12330871 Apr  4 12:37 onie-updater-x86_64-kvm_x86_64-r0
-```
-
-## Caveats
-
-### .gitconfig
-
-The initial docker environment sets up a fake .gitconfig, defaulting
-to the name `Build User` with email `build@example.com`.  For serious
-development you will want to changes these to legitimate values.
-
-### user / group IDs
-
-The build user and group IDs within the container will not make sense
-when viewed from the host environment.  This is why the build
-directory is created with world writable permissions.
+For Debian 13 compatibility, GRUB is upgraded to 2.14, with narrowly scoped
+source fixes rather than warning downgrades. Regenerating GRUB now requires
+`autoconf-archive`. The existing m4 1.4.18 SIGSTKSZ fix under
+`patches/crosstool-NG/local/m4/1.4.18/` is retained. These also apply to native
+builds. See the [GRUB migration audit](../../patches/grub/2.14/README.md) and
+[validation report](GRUB-2.14-validation.md) for results and remaining blockers.
+The g30w hardware configuration has not been validated on a device.

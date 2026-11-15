@@ -1,0 +1,17 @@
+From: ONIE maintainers
+Subject: [PATCH] net/dhcpv6: use the upstream 64-bit Unix time API
+
+Keep the transaction identifier assignment while using the correct output
+type for grub_datetime2unixtime().
+
+--- a/grub-core/net/bootp.c
++++ b/grub-core/net/bootp.c
+@@ -1062,7 +1062,7 @@
+   grub_dhcp6_session_t se;
+   struct grub_datetime date;
+   grub_err_t err;
+-  grub_int32_t t = 0;
++  grub_int64_t t = 0;
+ 
+   se = grub_malloc (sizeof (*se));
+ 

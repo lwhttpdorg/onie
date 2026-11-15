@@ -20,6 +20,18 @@ echo "Demo Installer: platform: $platform"
 # Install demo on same block device as ONIE
 blk_dev=$(blkid | grep ONIE-BOOT | awk '{print $1}' |  sed -e 's/[1-9][0-9]*:.*$//' | sed -e 's/\([0-9]\)\(p\)/\1/' | head -n 1)
 
+# G30W: do not guess among duplicate labels or install onto SATA.
+if [ "$machine" = bkhd_g30w ]; then
+    boot_devices=$(blkid | awk '/ LABEL="ONIE-BOOT"( |$)/ { sub(/:.*/, "", $1); print $1 }')
+    set -- $boot_devices
+    [ "$#" -eq 1 ] || {
+        echo "ERROR: G30W requires exactly one ONIE-BOOT partition" >&2
+        exit 1
+    }
+    echo "$1" | grep -Eq '^/dev/nvme[0-9]+n[0-9]+p[0-9]+$' || exit 1
+    blk_dev=$(echo "$1" | sed 's/p[0-9]*$//')
+fi
+
 [ -b "$blk_dev" ] || {
     echo "Error: Unable to determine block device of ONIE install"
     exit 1
@@ -66,6 +78,10 @@ create_demo_gpt_partition()
     # See if demo partition already exists
     demo_part=$(sgdisk -p $blk_dev | grep "$demo_volume_label" | awk '{print $1}')
     if [ -n "$demo_part" ] ; then
+        if [ "$machine" = bkhd_g30w ]; then
+            echo "ERROR: Existing demo partition; refusing to delete user data" >&2
+            exit 1
+        fi
         # delete existing partition
         sgdisk -d $demo_part $blk_dev || {
             echo "Error: Unable to delete partition $demo_part on $blk_dev"
@@ -336,10 +352,10 @@ demo_install_uefi_grub()
 }
 
 eval $create_demo_partition $blk_dev
-demo_dev=$(echo $blk_dev | sed -e 's/\(mmcblk[0-9]\)/\1p/')$demo_part
-echo $blk_dev | grep -q nvme && {
-    demo_dev=$(echo $blk_dev | sed -e 's/\(nvme[0-9]n[0-9]\)/\1p/')$demo_part
-}
+case "$blk_dev" in
+    /dev/nvme*n*|/dev/mmcblk*) demo_dev="${blk_dev}p${demo_part}" ;;
+    *) demo_dev="${blk_dev}${demo_part}" ;;
+esac
 partprobe
 
 # Create filesystem on demo partition with a label

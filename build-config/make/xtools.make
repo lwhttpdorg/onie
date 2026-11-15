@@ -99,11 +99,14 @@ ifeq ($(XTOOLS_LIBC),glibc)
   CT_NG_COMPONENTS += glibc-$(XTOOLS_LIBC_VERSION).tar.xz
 endif
 
-# Upstream locations for the crosstool-NG components, tried in order
-# after $(CROSSTOOL_ONIE_MIRROR) so a toolchain can still be built when
-# the ONIE mirror is unavailable.  Every tarball is still verified
-# against its SHA1 in $(UPSTREAMDIR).
-CT_NG_GNU_MIRRORS = http://ftp.gnu.org/gnu http://mirrors.kernel.org/gnu
+# Upstream locations for the crosstool-NG components.  These are tried
+# first -- they are usually much faster than the ONIE crosstool mirror --
+# and $(CROSSTOOL_ONIE_MIRROR) remains as the final fallback so a
+# toolchain can still be built when an upstream site drops an old
+# release.  Every tarball is still verified against its SHA1 in
+# $(UPSTREAMDIR).  Override CT_NG_GNU_MIRRORS (e.g. in local.make) to
+# point at a regional GNU mirror.
+CT_NG_GNU_MIRRORS ?= http://ftp.gnu.org/gnu http://mirrors.kernel.org/gnu
 
 # Packages found at $(CT_NG_GNU_MIRRORS)/<package>
 CT_NG_GNU_PKGS = autoconf automake binutils gdb gettext glibc gmp libiconv \
@@ -147,7 +150,7 @@ $(XTOOLS_DOWNLOAD_STAMP): $(XTOOLS_PREP_STAMP) | $(KERNEL_DOWNLOAD_STAMP) $(UCLI
 	$(Q) echo "==== Getting upstream crosstool-NG component libraries ===="
 	$(Q) $(foreach F,$(CT_NG_COMPONENTS),echo "==== Getting upstream $(F) ====" && \
 		$(SCRIPTDIR)/fetch-package $(DOWNLOADDIR) $(UPSTREAMDIR) \
-		$(F) $(CROSSTOOL_ONIE_MIRROR) $(call ct_ng_urls,$(F)) && ) true
+		$(F) $(call ct_ng_urls,$(F)) $(CROSSTOOL_ONIE_MIRROR) && ) true
 	$(Q) touch $@
 
 #
@@ -174,8 +177,11 @@ xtools-build: $(XTOOLS_BUILD_STAMP)
 $(XTOOLS_BUILD_STAMP): $(XTOOLS_BUILD_DIR)/.config $(XTOOLS_DOWNLOAD_STAMP) $(CROSSTOOL_NG_BUILD_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "====  Building xtools for $(XTOOLS_VERSION) in $(XTOOLS_BUILD_DIR) ===="
+	# ct-ng 1.24 does not mark build phony; its work directory has the
+	# same name and must never be mistaken for a completed toolchain.
 	$(Q) cd $(XTOOLS_BUILD_DIR) && \
-		$(CROSSTOOL_NG_DIR)/ct-ng build || (rm $(XTOOLS_BUILD_DIR)/.config.2 && false)
+		$(CROSSTOOL_NG_DIR)/ct-ng --eval='.PHONY: build' build || \
+		(rm -f $(XTOOLS_BUILD_DIR)/.config.2; false)
 	$(Q) touch $@
 
 xtools-clean:

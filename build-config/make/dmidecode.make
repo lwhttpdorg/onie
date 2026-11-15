@@ -9,17 +9,15 @@
 # This is a makefile fragment that defines the build of dmidecode
 #
 
-DMIDECODE_VERSION		= 3.1
+DMIDECODE_VERSION		= 3.7
 DMIDECODE_TARBALL		= dmidecode-$(DMIDECODE_VERSION).tar.xz
-DMIDECODE_TARBALL_URLS		+= $(ONIE_MIRROR) \
-				   http://download.savannah.gnu.org/releases/dmidecode \
-				   http://mirror.csclub.uwaterloo.ca/nongnu/dmidecode
+DMIDECODE_TARBALL_URLS		+= https://download.savannah.nongnu.org/releases/dmidecode $(ONIE_MIRROR)
 DMIDECODE_BUILD_DIR		= $(USER_BUILDDIR)/dmidecode
 DMIDECODE_DIR			= $(DMIDECODE_BUILD_DIR)/dmidecode-$(DMIDECODE_VERSION)
 
-DMIDECODE_SRCPATCHDIR		= $(PATCHDIR)/dmidecode
-DMIDECODE_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/dmidecode-download
-DMIDECODE_SOURCE_STAMP		= $(USER_STAMPDIR)/dmidecode-source
+DMIDECODE_SRCPATCHDIR		= $(PATCHDIR)/dmidecode/3.7
+DMIDECODE_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/dmidecode-$(DMIDECODE_VERSION)-download
+DMIDECODE_SOURCE_STAMP		= $(USER_STAMPDIR)/dmidecode-$(DMIDECODE_VERSION)-source
 DMIDECODE_PATCH_STAMP		= $(USER_STAMPDIR)/dmidecode-patch
 DMIDECODE_BUILD_STAMP		= $(USER_STAMPDIR)/dmidecode-build
 DMIDECODE_INSTALL_STAMP		= $(STAMPDIR)/dmidecode-install

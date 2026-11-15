@@ -9,15 +9,15 @@
 # This is a makefile fragment that defines the build of zlib
 #
 
-ZLIB_VERSION		= 1.2.11
+ZLIB_VERSION		= 1.4
 ZLIB_TARBALL		= zlib-$(ZLIB_VERSION).tar.xz
-ZLIB_TARBALL_URLS	+= $(ONIE_MIRROR) http://zlib.net \
-			   http://downloads.sourceforge.net/project/libpng/zlib/$(ZLIB_VERSION)
+ZLIB_TARBALL_URLS	+= https://zlib.net $(ONIE_MIRROR) \
+			   https://downloads.sourceforge.net/project/libpng/zlib/$(ZLIB_VERSION)
 ZLIB_BUILD_DIR		= $(USER_BUILDDIR)/zlib
 ZLIB_DIR		= $(ZLIB_BUILD_DIR)/zlib-$(ZLIB_VERSION)
 
-ZLIB_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/zlib-download
-ZLIB_SOURCE_STAMP	= $(USER_STAMPDIR)/zlib-source
+ZLIB_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/zlib-$(ZLIB_VERSION)-download
+ZLIB_SOURCE_STAMP	= $(USER_STAMPDIR)/zlib-$(ZLIB_VERSION)-source
 ZLIB_CONFIGURE_STAMP	= $(USER_STAMPDIR)/zlib-configure
 ZLIB_BUILD_STAMP	= $(USER_STAMPDIR)/zlib-build
 ZLIB_INSTALL_STAMP	= $(STAMPDIR)/zlib-install
@@ -59,7 +59,9 @@ zlib-configure: $(ZLIB_CONFIGURE_STAMP)
 $(ZLIB_CONFIGURE_STAMP): $(ZLIB_SOURCE_STAMP) | $(DEV_SYSROOT_INIT_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "====  Configure zlib-$(ZLIB_VERSION) ===="
-	$(Q) cd $(ZLIB_DIR) &&					\
+	$(Q) cd $(ZLIB_DIR) && PATH='$(CROSSBIN):$(PATH)' \
+	    CHOST=$(TARGET) CC=$(CROSSPREFIX)gcc \
+	    CFLAGS="$(ONIE_CFLAGS)" LDFLAGS="$(ONIE_LDFLAGS)" \
 	    $(ZLIB_DIR)/configure				\
 		--prefix=/usr
 	$(Q) touch $@

@@ -66,7 +66,6 @@ GRUB_MODULES="
 	loadenv
 	loopback
 	linux
-	linuxefi
 	lsefi
 	lsefimmap
 	lsefisystab
@@ -174,7 +173,7 @@ EOF
 set superusers="$GRUB_USER"
 export superusers
 password_pbkdf2 $GRUB_USER $GRUB_PASSWORD_HASH
-configfile \$cmdpath/grub.cfg"
+configfile \$cmdpath/grub.cfg
 EOF
 
 else
@@ -184,7 +183,7 @@ else
 	# reads a grub.cfg from the EFI directory
     # where the final grub binary is running.
     cat <<EOF > $tmp_config
-configfile \$cmdpath/grub.cfg"
+configfile \$cmdpath/grub.cfg
 EOF
 fi
 

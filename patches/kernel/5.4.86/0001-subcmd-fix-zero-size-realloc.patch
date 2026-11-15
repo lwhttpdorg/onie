@@ -1,0 +1,35 @@
+tools: subcmd: avoid reusing a pointer after zero-sized realloc
+
+Normalize zero-sized requests before calling realloc, since realloc(ptr, 0)
+may free ptr. Retrying with that pointer is invalid and is diagnosed by
+modern host GCC. Preserve allocation failure handling and all objtool
+validation rather than disabling its warnings or the ORC unwinder.
+
+SPDX-License-Identifier: GPL-2.0
+
+--- a/tools/lib/subcmd/subcmd-util.h
++++ b/tools/lib/subcmd/subcmd-util.h
+@@ -49,16 +49,13 @@ static NORETURN inline void die(const ch
+ 
+ static inline void *xrealloc(void *ptr, size_t size)
+ {
+-	void *ret = realloc(ptr, size);
+-	if (!ret && !size)
+-		ret = realloc(ptr, 1);
+-	if (!ret) {
+-		ret = realloc(ptr, size);
+-		if (!ret && !size)
+-			ret = realloc(ptr, 1);
+-		if (!ret)
+-			die("Out of memory, realloc failed");
+-	}
++	void *ret;
++
++	if (!size)
++		size = 1;
++	ret = realloc(ptr, size);
++	if (!ret)
++		die("Out of memory, realloc failed");
+ 	return ret;
+ }
+ 

@@ -287,10 +287,7 @@ if [ "$UEFI_ENABLE" = "yes" ] ; then
 	zfscrypt
 	zfsinfo
 "
-	# linuxefi is an x86 specific
-    if [ ${ARCH} != "arm64" ]; then
-        GRUB_MODULES=$GRUB_MODULES" linuxefi"
-    fi
+    # GRUB 2.14 uses the unified linux module on all EFI architectures.
     # Generate UEFI format GRUB image
     mkdir -p $RECOVERY_EFI_BOOT_DIR
     $GRUB_HOST_BIN_UEFI_DIR/grub-mkimage \
@@ -342,7 +339,11 @@ else
 	cp ${RECOVERY_CONF_DIR}/xorriso-options-bios.cfg ${RECOVERY_XORRISO_OPTIONS}
 fi
 
-cd $RECOVERY_DIR && $XORRISO -outdev $RECOVERY_ISO_IMAGE \
+# -return_with SORRY 0: the GRUB isohybrid system area (embedded.img)
+# leaves non-zero bytes in the MBR partition-table area.  xorriso >= 1.5.5
+# scans those as bogus partition extents and raises SORRY events, which by
+# default make it exit with 32 even though the ISO was written completely.
+cd $RECOVERY_DIR && $XORRISO -return_with SORRY 0 -outdev $RECOVERY_ISO_IMAGE \
     -map $RECOVERY_ISO_SYSROOT / \
     -options_from_file $RECOVERY_XORRISO_OPTIONS
 
@@ -359,7 +360,7 @@ if [ "$UEFI_ENABLE" = "yes" ] ; then
     # UEFI firmware will recognize as a UEFI bootable image.
 
     # sanity check
-    $XORRISO -indev $RECOVERY_ISO_IMAGE \
+    $XORRISO -return_with SORRY 0 -indev $RECOVERY_ISO_IMAGE \
         -find /boot/efi.img -name efi.img -exec report_lba -- 2> /dev/null | grep -q efi.img || {
         echo "ERROR: Unable to find efi.img in the .ISO image"
         exit 1
@@ -371,7 +372,7 @@ if [ "$UEFI_ENABLE" = "yes" ] ; then
     # The output of the xorriso find command looks like:
     # Report layout: xt , Startlba ,   Blocks , Filesize , ISO image path
     # File data lba:  0 ,      132 ,       80 ,   163840 , '/boot/efi.img'
-    EFI_IMG_START_BLOCK=$($XORRISO -indev $RECOVERY_ISO_IMAGE \
+    EFI_IMG_START_BLOCK=$($XORRISO -return_with SORRY 0 -indev $RECOVERY_ISO_IMAGE \
         -find /boot/efi.img -name efi.img -exec report_lba -- 2> /dev/null | \
         grep efi.img | awk '{ print $6 }')
     EFI_IMG_START_SECTOR=$(( $EFI_IMG_START_BLOCK * 2048 / 512 ))

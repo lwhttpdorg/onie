@@ -16,10 +16,38 @@ fi
 SERIES="`realpath \"$SERIES\"`"
 PATCH_ROOT=`dirname $SERIES`
 
-cd "$SRC" &&
-git init && 
-git add . > /dev/null &&
-git commit -m "Unmodified $(basename $SRC) src" --allow-empty > /dev/null &&
-stg init && 
+cd "$SRC" || exit 1
+
+# Idempotency.  A make rule may re-run this script on a tree that was
+# already patched by a previous build (e.g. a stamp was invalidated by an
+# unrelated dependency).  Plain "git init && stg init" fails in that case
+# with "stg init: master: branch already initialized".
+if [ ! -d .git ]; then
+    git init
+    git add . > /dev/null
+    git commit -m "Unmodified $(basename $SRC) src" --allow-empty > /dev/null
+    stg init
+else
+    # Stack already present: if it matches the requested series there is
+    # nothing to do.  Resetting an stgit stack in place is not reliable
+    # across stgit versions, so when the series actually changed require a
+    # clean re-extract of the source tree instead of guessing.
+    want=$(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$SERIES" | xargs -n1 basename 2> /dev/null)
+    have=$(stg series --noprefix 2> /dev/null)
+    if [ -n "$have" ] && [ "$want" = "$have" ]; then
+        echo "Patch series already applied to $(basename $SRC); skipping."
+        echo -e "%(description)s\n" > .git/patchexport.tmpl
+        exit 0
+    fi
+    if [ -n "$have" ]; then
+        echo "ERROR: $SRC has a different stgit stack applied than $SERIES." >&2
+        echo "       Remove the source tree (e.g. 'make kernel-clean' or" >&2
+        echo "       delete the build directory for this package) so it is" >&2
+        echo "       re-extracted before changing the patch series." >&2
+        exit 1
+    fi
+    stg init > /dev/null 2>&1 || true
+fi
+
 stg import -s "$SERIES" &&
 echo -e "%(description)s\n" > .git/patchexport.tmpl

@@ -1,0 +1,46 @@
+gdb: use the standard sysconfig module for Python build parameters
+
+Python 3.12 removed distutils. Preserve Python-enabled GDB configuration
+using the standard module, without disabling Python or compiler checks.
+
+SPDX-License-Identifier: GPL-2.0
+
+--- a/gdb/python/python-config.py
++++ b/gdb/python/python-config.py
+@@ -4,7 +4,7 @@
+ import sys
+ import os
+ import getopt
+-from distutils import sysconfig
++import sysconfig
+ 
+ valid_opts = ['prefix', 'exec-prefix', 'includes', 'libs', 'cflags',
+               'ldflags', 'help']
+@@ -45,14 +45,14 @@
+ 
+ for opt in opt_flags:
+     if opt == '--prefix':
+-        print (to_unix_path(sysconfig.PREFIX))
++        print (to_unix_path(sys.prefix))
+ 
+     elif opt == '--exec-prefix':
+-        print (to_unix_path(sysconfig.EXEC_PREFIX))
++        print (to_unix_path(sys.exec_prefix))
+ 
+     elif opt in ('--includes', '--cflags'):
+-        flags = ['-I' + sysconfig.get_python_inc(),
+-                 '-I' + sysconfig.get_python_inc(plat_specific=True)]
++        flags = ['-I' + sysconfig.get_path('include'),
++                 '-I' + sysconfig.get_path('platinclude')]
+         if opt == '--cflags':
+             flags.extend(getvar('CFLAGS').split())
+         print (to_unix_path(' '.join(flags)))
+@@ -71,7 +71,7 @@
+                 if getvar('LIBPL') is not None:
+                     libs.insert(0, '-L' + getvar('LIBPL'))
+                 elif os.name == 'nt':
+-                    libs.insert(0, '-L' + sysconfig.PREFIX + '/libs')
++                    libs.insert(0, '-L' + sys.prefix + '/libs')
+             if getvar('LINKFORSHARED') is not None:
+                 libs.extend(getvar('LINKFORSHARED').split())
+         print (to_unix_path(' '.join(libs)))

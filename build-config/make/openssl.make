@@ -83,6 +83,7 @@ $(OPENSSL_CONFIGURE_STAMP): $(OPENSSL_SOURCE_STAMP) $(ZLIB_BUILD_STAMP) \
 		$(OPENSSL_DIR)/config				\
 		$(OPENSSL_ARCH)					\
 		--prefix=/usr					\
+		--libdir=lib					\
 		--cross-compile-prefix=$(CROSSPREFIX)		\
 		shared						\
 		enable-ssl-trace				\

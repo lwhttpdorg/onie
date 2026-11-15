@@ -1,0 +1,30 @@
+From b4b79831573152f1f68887c0e3b6ff30889b4d2b Mon Sep 17 00:00:00 2001
+From: ONIE <onie@example.invalid>
+Date: Sun, 15 Nov 2026 12:41:15 +0800
+Subject: [PATCH] net: use upstream hexdigit helper
+
+---
+ grub-core/net/bootp.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/grub-core/net/bootp.c b/grub-core/net/bootp.c
+index 6db5800..e8ec208 100644
+--- a/grub-core/net/bootp.c
++++ b/grub-core/net/bootp.c
+@@ -1472,13 +1472,6 @@ grub_net_process_dhcp6 (struct grub_net_buff *nb,
+   return GRUB_ERR_NONE;
+ }
+ 
+-static char
+-hexdigit (grub_uint8_t val)
+-{
+-  if (val < 10)
+-    return val + '0';
+-  return val + 'a' - 10;
+-}
+ 
+ static grub_err_t
+ grub_cmd_dhcpopt (struct grub_command *cmd __attribute__ ((unused)),
+-- 
+2.56.0
+

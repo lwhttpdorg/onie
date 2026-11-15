@@ -9,15 +9,14 @@
 # This is a makefile fragment that defines the build of libpcap
 #
 
-LIBPCAP_VERSION		= 1.10.4
-LIBPCAP_TARBALL		= libpcap-$(LIBPCAP_VERSION).tar.gz
-LIBPCAP_TARBALL_URLS	+= $(ONIE_MIRROR) \
-			   https://www.tcpdump.org/release
+LIBPCAP_VERSION		= 1.11.0
+LIBPCAP_TARBALL		= libpcap-$(LIBPCAP_VERSION).tar.xz
+LIBPCAP_TARBALL_URLS	+= https://www.tcpdump.org/release $(ONIE_MIRROR)
 LIBPCAP_BUILD_DIR	=  $(USER_BUILDDIR)/libpcap
 LIBPCAP_DIR		=  $(LIBPCAP_BUILD_DIR)/libpcap-$(LIBPCAP_VERSION)
 
-LIBPCAP_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/libpcap-download
-LIBPCAP_SOURCE_STAMP	= $(USER_STAMPDIR)/libpcap-source
+LIBPCAP_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/libpcap-$(LIBPCAP_VERSION)-download
+LIBPCAP_SOURCE_STAMP	= $(USER_STAMPDIR)/libpcap-$(LIBPCAP_VERSION)-source
 LIBPCAP_CONFIGURE_STAMP	= $(USER_STAMPDIR)/libpcap-configure
 LIBPCAP_BUILD_STAMP	= $(USER_STAMPDIR)/libpcap-build
 LIBPCAP_INSTALL_STAMP	= $(STAMPDIR)/libpcap-install
@@ -69,10 +68,13 @@ libpcap-configure: $(LIBPCAP_CONFIGURE_STAMP)
 $(LIBPCAP_CONFIGURE_STAMP): $(LIBPCAP_SOURCE_STAMP) | $(DEV_SYSROOT_INIT_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "====  Configure libpcap-$(LIBPCAP_VERSION) ===="
-	$(Q) cd $(LIBPCAP_DIR) &&		\
+	$(Q) cd $(LIBPCAP_DIR) && PATH='$(CROSSBIN):$(PATH)' \
+		$(ONIE_PKG_CONFIG) \
 		$(LIBPCAP_DIR)/configure	\
 		--host=$(TARGET)		\
-		--prefix=/usr
+		--prefix=/usr \
+		CC=$(CROSSPREFIX)gcc \
+		CFLAGS="$(ONIE_CFLAGS)" LDFLAGS="$(ONIE_LDFLAGS)"
 	$(Q) touch $@
 
 libpcap-build: $(LIBPCAP_BUILD_STAMP)

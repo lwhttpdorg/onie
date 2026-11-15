@@ -67,8 +67,12 @@ $(KERNEL_SOURCE_STAMP): $(TREE_STAMP) $(KERNEL_DOWNLOAD_STAMP)
 # patches with the current machine's platform dependent patches on
 # top.
 #
+# Only the series file and actual patch files must invalidate this stamp.
+# Do not depend on $(MACHINE_KERNEL_PATCHDIR)/* here: the kconfig fragment
+# (config) lives in the same directory and must not re-trigger patching
+# (re-running apply-patch-series on an already patched tree used to fail).
 kernel-patch: $(KERNEL_PATCH_STAMP)
-$(KERNEL_PATCH_STAMP): $(KERNEL_SRCPATCHDIR)/* $(MACHINE_KERNEL_PATCHDIR)/* $(KERNEL_SOURCE_STAMP)
+$(KERNEL_PATCH_STAMP): $(KERNEL_SRCPATCHDIR)/* $(MACHINE_KERNEL_PATCHDIR)/series $(wildcard $(MACHINE_KERNEL_PATCHDIR)/*.patch) $(KERNEL_SOURCE_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "==== patching  Linux ===="
 	$(Q) [ -r $(MACHINE_KERNEL_PATCHDIR)/series ] || \
@@ -82,7 +86,7 @@ $(KERNEL_PATCH_STAMP): $(KERNEL_SRCPATCHDIR)/* $(MACHINE_KERNEL_PATCHDIR)/* $(KE
 	$(Q) $(SCRIPTDIR)/apply-patch-series $(KERNEL_PATCHDIR)/series $(LINUXDIR)
 	$(Q) touch $@
 
-$(LINUXDIR)/.config : $(LINUX_CONFIG) $(KERNEL_PATCH_STAMP)
+$(LINUXDIR)/.config : $(LINUX_CONFIG) $(MACHINE_KERNEL_PATCHDIR)/config $(KERNEL_PATCH_STAMP)
 	$(Q) echo "==== Copying $(LINUX_CONFIG) to $(LINUXDIR)/.config ===="
 	$(Q) cp -v $< $@
 #	$(Q) cat $(MACHINE_KERNEL_PATCHDIR)/config >> $(LINUXDIR)/.config

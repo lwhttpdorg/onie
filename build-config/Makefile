@@ -515,6 +515,28 @@ ifeq ($(FIRMWARE_UPDATE_ENABLE),yes)
   include make/firmware-update.make
 endif
 
+#-------------------------------------------------------------------------------
+#
+# Download URL ordering
+#
+# The make fragments above list $(ONIE_MIRROR) first in every *_URLS list.
+# The mirror is the only copy of a few packages (e.g. mtree), but it can be
+# very slow.  fetch-package only falls through to the next URL when a
+# download *fails*; a slow mirror never falls back.  So move the mirror to
+# the end of every URL list: the (usually much faster) upstream sources are
+# tried first and the mirror remains as the final fallback.
+#
+# Set ONIE_MIRROR_FIRST=yes to keep the original mirror-first order.
+#
+ONIE_MIRROR_FIRST ?= no
+ifneq ($(ONIE_MIRROR),)
+ifeq ($(ONIE_MIRROR_FIRST),no)
+$(foreach v,$(filter %_URLS,$(.VARIABLES)), \
+	$(if $(filter $(ONIE_MIRROR),$($v)), \
+		$(eval $v := $(filter-out $(ONIE_MIRROR),$($v)) $(ONIE_MIRROR))))
+endif
+endif
+
 # Pre Debian 11 environments just had /usr/bin/python
 # Now the environment distinguishes between python2 and python3
 # If 'python' is not present, default to python2

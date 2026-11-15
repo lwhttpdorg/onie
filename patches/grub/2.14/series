@@ -1,0 +1,15 @@
+0001-core-in-fs.patch
+0002-restore-mkdevicemap.patch
+0003-deviceiter-overflow.patch
+0004-install-efi-fallback.patch
+0005-is_sb_enabled_command.patch
+0006-bsd-explicit-allocation-error.patch
+0007-bootp-new-net_bootp6-command.patch
+0008-efinet-uefi-ipv6-pxe-support.patch
+0009-bootp-process-dhcpack-http-boot.patch
+0010-efinet-set-network-from-uefi-devpath.patch
+0011-efinet-set-dns-from-uefi-proto.patch
+0012-net-use-upstream-hexdigit.patch
+0013-dhcpv6-time64-api.patch
+0014-elf-text-address.patch
+0015-bootp-alloc.patch

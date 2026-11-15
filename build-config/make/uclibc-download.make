@@ -11,7 +11,12 @@
 #
 
 UCLIBC_TARBALL		= uClibc-ng-$(XTOOLS_LIBC_VERSION).tar.xz
-UCLIBC_TARBALL_URLS	+= $(ONIE_MIRROR) http://downloads.uclibc-ng.org/releases/$(XTOOLS_LIBC_VERSION)
+# downloads.uclibc-ng.org is often very slow; Buildroot's distfiles
+# mirror carries the identical (SHA1-verified) release tarballs and is
+# typically an order of magnitude faster.
+UCLIBC_TARBALL_URLS	+= https://sources.buildroot.net/uclibc \
+			   $(ONIE_MIRROR) \
+			   http://downloads.uclibc-ng.org/releases/$(XTOOLS_LIBC_VERSION)
 UCLIBC_CONFIG		= $(realpath conf)/uclibc/$(XTOOLS_LIBC_VERSION)/uclibc.$(ONIE_ARCH).config
 
 UCLIBC_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/uclibc-$(XTOOLS_LIBC_VERSION)-download

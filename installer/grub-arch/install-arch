@@ -45,6 +45,7 @@ parse_arg_arch()
     case $a in
         d)
             onie_dev="$optarg"
+            onie_dev_explicit=yes
             ;;
 		j)
 			set -x
@@ -65,6 +66,11 @@ init_onie_install()
     # Find target install block device.
     # - Default value from burned in install.conf
     # - Overridden with -d CLI arg
+    if command -v validate_install_device_platform >/dev/null 2>&1 &&
+       [ "$onie_dev_explicit" = yes ] && [ ! -b "$onie_dev" ]; then
+        echo "ERROR: Invalid explicit install device: $onie_dev"
+        exit 1
+    fi
     [ -b "$onie_dev" ] || onie_dev="$(install_device_platform)"
     [ $? -eq 0 ] || {
         echo "WARNING: Unable to find ONIE install block device."
@@ -90,6 +96,10 @@ init_onie_install()
     # wipe out current onie_dev if ONIE will embed to another
     # one, or just keep updating to current one
     curr_onie_dev=$(onie_get_boot_disk)
+    # Optional machine policy runs before disk switching or any write.
+    if command -v validate_install_device_platform >/dev/null 2>&1 ; then
+        validate_install_device_platform || exit 1
+    fi
     if [ -b "$curr_onie_dev" ] && [ "$curr_onie_dev" != "$onie_dev" ] ; then
         if [ "$onie_boot_reason" = "embed" ] ; then
             wipe_curr_onie_dev="yes"

@@ -1,0 +1,26 @@
+Preserve ONIE cross compilation and target flags.
+
+SPDX-License-Identifier: GPL-2.0
+
+--- a/Makefile
++++ b/Makefile
+@@ -12,7 +12,7 @@
+ #   (at your option) any later version.
+ #
+ 
+-CC     ?= gcc
++CC      = $(CROSS_COMPILE)gcc
+ # Base CFLAGS can be overridden by environment
+ CFLAGS ?= -O2
+ # When debugging, disable -O2 and enable -g
+@@ -26,6 +26,10 @@
+ 
+ # Pass linker flags here (can be set from environment too)
+ LDFLAGS ?=
++
++# Preserve ONIE target flags in addition to upstream warning flags.
++CFLAGS  += $(ONIE_CFLAGS)
++LDFLAGS += $(ONIE_LDFLAGS)
+ 
+ DESTDIR =
+ prefix  = /usr/local

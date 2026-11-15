@@ -20,7 +20,7 @@ For example the following URL is attempted:
    \$URL1/\$base_file_name
 
 The <SHA1 dir> contains <base file name>.sha1, which is verified
-after downloading.
+after downloading. If <base file name>.sha256 exists, it must also match.
 EOF
 }
 
@@ -61,7 +61,10 @@ shift 3
 SHA1DIR=$(cd "$SHA1DIR" && pwd)
 
 verify_sha1() {
-    (cd "$OUTDIR" && sha1sum -c "${SHA1DIR}/${FILE}.sha1")
+    (cd "$OUTDIR" && sha1sum -c "${SHA1DIR}/${FILE}.sha1") || return 1
+    if [ -e "${SHA1DIR}/${FILE}.sha256" ]; then
+        (cd "$OUTDIR" && sha256sum -c "${SHA1DIR}/${FILE}.sha256") || return 1
+    fi
 }
 
 [ $# -ge 1 ] || {
@@ -71,7 +74,7 @@ verify_sha1() {
 }
 
 if [ -r "${OUTDIR}/${FILE}" ] && ! verify_sha1 > /dev/null 2>&1 ; then
-    echo "Removing cached ${OUTDIR}/${FILE} with mismatched SHA1"
+    echo "Removing cached ${OUTDIR}/${FILE} with mismatched checksum"
     rm -f "${OUTDIR}/${FILE}"
 fi
 
@@ -88,8 +91,16 @@ else
 		while [ $# -ge 1 ] ; do
 			URL="$1/$FILE"
 			echo "  Downloading $FILE from: $URL"
-			wget --no-verbose --no-check-certificate --timeout=60 --tries=3 \
-				-O "${OUTDIR}/${FILE}" $URL
+			# Use curl instead of wget: --speed-limit aborts a
+			# transfer that stays below 10 KiB/s for 30s, so a
+			# slow-but-alive server (e.g. a half-dead upstream)
+			# falls through to the next URL instead of blocking
+			# the build forever.  wget's --timeout is only a read
+			# timeout and never triggers on a trickle.
+			curl -sS -L --fail \
+				--connect-timeout 15 \
+				--speed-limit 10240 --speed-time 30 \
+				-o "${OUTDIR}/${FILE}" "$URL"
 			# A server can answer with an error page instead of the
 			# file, so only stop once the SHA1 matches.
 			if [ $? -eq 0 ] && verify_sha1 ; then
@@ -124,7 +135,7 @@ fi
 
 # Verify SHA1
 verify_sha1 || {
-        echo " ERROR: Unable to verify sha1 for ${FILE}"
+        echo " ERROR: Unable to verify checksums for ${FILE}"
         exit 1
     }
 

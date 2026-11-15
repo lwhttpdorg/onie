@@ -1,0 +1,22 @@
+readline: declare the configured wcwidth interface
+
+GDB 7.12.1's bundled readline detects wcwidth at configure time, but
+some host C library feature profiles do not expose its declaration.
+Declare the standard interface when configure found the function.
+This preserves multibyte support and fixes the missing declaration
+without suppressing compiler diagnostics.
+
+SPDX-License-Identifier: GPL-2.0
+
+--- a/readline/rlmbutil.h
++++ b/readline/rlmbutil.h
+@@ -34,6 +34,9 @@
+ #if defined (HAVE_WCTYPE_H) && defined (HAVE_WCHAR_H) && defined (HAVE_LOCALE_H)
+ #  include <wchar.h>
+ #  include <wctype.h>
++#  if defined (HAVE_WCWIDTH)
++extern int wcwidth (wchar_t);
++#  endif
+ #  if defined (HAVE_ISWCTYPE) && \
+       defined (HAVE_ISWLOWER) && \
+       defined (HAVE_ISWUPPER) && \

@@ -1,0 +1,23 @@
+From: ONIE maintainers
+Subject: [PATCH] configure: prefer text section placement over ELF image base
+
+Binutils 2.44 accepts --image-base for ELF but includes ELF headers before
+.text. GRUB BIOS needs .text at its exact load address. Probe -Ttext first
+while preserving --image-base as the alternative for other linkers.
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -1798,9 +1798,11 @@
+ m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You must install it to generate the configure script.])])
+ 
+ if test "x$TARGET_APPLE_LINKER" != x1 ; then
+-AX_CHECK_LINK_FLAG([-Wl,--image-base,0x400000],
++dnl GNU ld 2.44 accepts --image-base for ELF too, but that locates the
++dnl ELF headers, not .text. Prefer the section address required by GRUB.
++AX_CHECK_LINK_FLAG([-Wl,-Ttext,0x400000],
++    [TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"],
+     [TARGET_IMG_BASE_LDOPT="-Wl,--image-base"],
+-    [TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"],
+     [],
+     [AC_LANG_SOURCE([
+ asm (".globl start; start:");

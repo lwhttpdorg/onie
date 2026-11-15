@@ -9,22 +9,19 @@
 # This is a makefile fragment that defines the build of dosfstools
 #
 
-DOSFSTOOLS_VERSION		= 3.0.26
-# Debian's orig tarball is the upstream release tarball, byte for byte
-DOSFSTOOLS_TARBALL		= dosfstools_$(DOSFSTOOLS_VERSION).orig.tar.xz
-DOSFSTOOLS_TARBALL_URLS		+= $(ONIE_MIRROR) \
-				   http://snapshot.debian.org/archive/debian/20140307T220401Z/pool/main/d/dosfstools
+DOSFSTOOLS_VERSION		= 4.2
+DOSFSTOOLS_TARBALL		= dosfstools-$(DOSFSTOOLS_VERSION).tar.gz
+DOSFSTOOLS_TARBALL_URLS		+= https://github.com/dosfstools/dosfstools/releases/download/v$(DOSFSTOOLS_VERSION) $(ONIE_MIRROR)
 DOSFSTOOLS_BUILD_DIR		= $(USER_BUILDDIR)/dosfstools
 DOSFSTOOLS_DIR			= $(DOSFSTOOLS_BUILD_DIR)/dosfstools-$(DOSFSTOOLS_VERSION)
 
-DOSFSTOOLS_SRCPATCHDIR		= $(PATCHDIR)/dosfstools
-DOSFSTOOLS_DOWNLOAD_STAMP		= $(DOWNLOADDIR)/dosfstools-download
-DOSFSTOOLS_SOURCE_STAMP		= $(USER_STAMPDIR)/dosfstools-source
-DOSFSTOOLS_PATCH_STAMP		= $(USER_STAMPDIR)/dosfstools-patch
+DOSFSTOOLS_DOWNLOAD_STAMP		= $(DOWNLOADDIR)/dosfstools-$(DOSFSTOOLS_VERSION)-download
+DOSFSTOOLS_SOURCE_STAMP		= $(USER_STAMPDIR)/dosfstools-$(DOSFSTOOLS_VERSION)-source
+DOSFSTOOLS_CONFIGURE_STAMP	= $(USER_STAMPDIR)/dosfstools-configure
 DOSFSTOOLS_BUILD_STAMP		= $(USER_STAMPDIR)/dosfstools-build
 DOSFSTOOLS_INSTALL_STAMP	= $(STAMPDIR)/dosfstools-install
 DOSFSTOOLS_STAMP		= $(DOSFSTOOLS_SOURCE_STAMP) \
-				  $(DOSFSTOOLS_PATCH_STAMP) \
+				  $(DOSFSTOOLS_CONFIGURE_STAMP) \
 				  $(DOSFSTOOLS_BUILD_STAMP) \
 				  $(DOSFSTOOLS_INSTALL_STAMP)
 
@@ -32,7 +29,7 @@ DOSFSTOOLS_PROGRAMS	= fsck.fat dosfsck fsck.msdos fsck.vfat \
 				mkfs.fat mkdosfs mkfs.msdos mkfs.vfat \
 				fatlabel dosfslabel
 
-PHONY += dosfstools dosfstools-download dosfstools-source dosfstools-patch \
+PHONY += dosfstools dosfstools-download dosfstools-source dosfstools-patch dosfstools-configure \
 	dosfstools-build dosfstools-install dosfstools-clean dosfstools-download-clean
 
 dosfstools: $(DOSFSTOOLS_STAMP)
@@ -54,11 +51,20 @@ $(DOSFSTOOLS_SOURCE_STAMP): $(USER_TREE_STAMP) | $(DOSFSTOOLS_DOWNLOAD_STAMP)
 	$(Q) $(SCRIPTDIR)/extract-package $(DOSFSTOOLS_BUILD_DIR) $(DOWNLOADDIR)/$(DOSFSTOOLS_TARBALL)
 	$(Q) touch $@
 
-dosfstools-patch: $(DOSFSTOOLS_PATCH_STAMP)
-$(DOSFSTOOLS_PATCH_STAMP): $(DOSFSTOOLS_SRCPATCHDIR)/* $(DOSFSTOOLS_SOURCE_STAMP)
+# Keep the historical target, but do not apply the 3.0.26 locale no-op
+# patch to 4.2. The current libc supports locale, wchar and iconv; retain
+# upstream character conversion rather than replacing it with stubs.
+dosfstools-patch: $(DOSFSTOOLS_SOURCE_STAMP)
+
+dosfstools-configure: $(DOSFSTOOLS_CONFIGURE_STAMP)
+$(DOSFSTOOLS_CONFIGURE_STAMP): $(DOSFSTOOLS_SOURCE_STAMP) | $(DEV_SYSROOT_INIT_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
-	$(Q) echo "==== Patching dosfstools ===="
-	$(Q) $(SCRIPTDIR)/apply-patch-series $(DOSFSTOOLS_SRCPATCHDIR)/series $(DOSFSTOOLS_DIR)
+	$(Q) echo "==== Configure dosfstools-$(DOSFSTOOLS_VERSION) ===="
+	$(Q) cd $(DOSFSTOOLS_DIR) && PATH='$(CROSSBIN):$(PATH)' \
+		./configure --host=$(TARGET) --prefix=/usr \
+		--enable-compat-symlinks \
+		CC=$(CROSSPREFIX)gcc \
+		CFLAGS="$(ONIE_CFLAGS)" LDFLAGS="$(ONIE_LDFLAGS)"
 	$(Q) touch $@
 
 ifndef MAKE_CLEAN
@@ -70,16 +76,16 @@ endif
 DOSFSTOOLS_MAKE_VARS = \
 	CC=$(CROSSPREFIX)gcc LD=$(CROSSPREFIX)ld \
 	CFLAGS="$(ONIE_CFLAGS)" LDFLAGS="$(ONIE_LDFLAGS)" \
-	DESTDIR=$(DEV_SYSROOT) PREFIX=/usr
+	DESTDIR=$(DEV_SYSROOT)
 
 dosfstools-build: $(DOSFSTOOLS_BUILD_STAMP)
-$(DOSFSTOOLS_BUILD_STAMP): $(DOSFSTOOLS_PATCH_STAMP) $(DOSFSTOOLS_NEW_FILES) \
+$(DOSFSTOOLS_BUILD_STAMP): $(DOSFSTOOLS_CONFIGURE_STAMP) $(DOSFSTOOLS_NEW_FILES) \
 				| $(DEV_SYSROOT_INIT_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "====  Building dosfstools-$(DOSFSTOOLS_VERSION) ===="
 	$(Q) PATH='$(CROSSBIN):$(PATH)'	$(MAKE) -C $(DOSFSTOOLS_DIR) $(DOSFSTOOLS_MAKE_VARS)
 	$(Q) PATH='$(CROSSBIN):$(PATH)'	$(MAKE) -C $(DOSFSTOOLS_DIR) $(DOSFSTOOLS_MAKE_VARS) \
-		install-symlinks
+		install
 	$(Q) touch $@
 
 dosfstools-install: $(DOSFSTOOLS_INSTALL_STAMP)

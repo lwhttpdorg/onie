@@ -49,7 +49,7 @@ onie_get_boot_disk()
 {
     local disk=$(onie_get_boot_dev)
     # Strip off the partition numbers from end
-    disk="${disk%%[0-9]}"
+    disk="$(echo "$disk" | sed 's/[0-9]*$//')"
     # remove partition suffix p in case of MMC card
     echo ${disk} | grep -q mmcblk && disk="${disk%%p}"
     # remove partition suffix p in case of NVMe disk

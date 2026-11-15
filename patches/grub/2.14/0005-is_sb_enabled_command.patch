@@ -1,0 +1,77 @@
+From: ONIE maintainers
+Subject: [PATCH] Preserve ONIE Secure Boot state command with upstream EFI API
+
+Keep the existing ONIE configuration ABI: status 1 means Secure Boot enabled,
+status 0 means disabled. Do not change signature verification policy.
+
+--- a/grub-core/Makefile.core.def
++++ b/grub-core/Makefile.core.def
+@@ -837,6 +837,12 @@
+ };
+ 
+ module = {
++  name = is_sb_enabled;
++  efi = commands/efi/is_sb_enabled.c;
++  enable = efi;
++};
++
++module = {
+   name = efifwsetup;
+   efi = commands/efi/efifwsetup.c;
+   enable = efi;
+--- /dev/null
++++ b/grub-core/commands/efi/is_sb_enabled.c
+@@ -0,0 +1,53 @@
++/*
++ *  GRUB  --  GRand Unified Bootloader
++ *  Copyright (C) 2012  Free Software Foundation, Inc.
++ *
++ *  GRUB is free software: you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation, either version 3 of the License, or
++ *  (at your option) any later version.
++ *
++ *  GRUB is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <grub/efi/efi.h>
++#include <grub/efi/api.h>
++#include <grub/efi/sb.h>
++#include <grub/command.h>
++
++GRUB_MOD_LICENSE ("GPLv3+");
++
++static grub_err_t
++grub_cmd_is_sb_enabled (grub_command_t cmd __attribute__ ((unused)),
++                         int argc __attribute__ ((unused)),
++                         char **args __attribute__ ((unused)))
++{
++  if (grub_efi_get_secureboot () == GRUB_EFI_SECUREBOOT_MODE_ENABLED)
++  {
++    grub_printf ("Secure Boot enabled");
++    return 1;
++  }
++  else
++  {
++    grub_printf ("Secure Boot disabled");
++    return 0;
++  }
++}
++
++static grub_command_t cmd;
++
++GRUB_MOD_INIT(is_sb_enabled)
++{
++  cmd = grub_register_command ("is_sb_enabled", grub_cmd_is_sb_enabled,
++                                "", "Show if secure boot is enabled");
++}
++
++GRUB_MOD_FINI(is_sb_enabled)
++{
++  grub_unregister_command (cmd);
++}

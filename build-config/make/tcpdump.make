@@ -12,15 +12,14 @@
 include make/libpcap.make
 include make/openssl.make
 
-TCPDUMP_VERSION		= 4.99.4
-TCPDUMP_TARBALL		= tcpdump-$(TCPDUMP_VERSION).tar.gz
-TCPDUMP_TARBALL_URLS	+= $(ONIE_MIRROR) \
-			   https://www.tcpdump.org/release
+TCPDUMP_VERSION		= 4.99.7
+TCPDUMP_TARBALL		= tcpdump-$(TCPDUMP_VERSION).tar.xz
+TCPDUMP_TARBALL_URLS	+= https://www.tcpdump.org/release $(ONIE_MIRROR)
 TCPDUMP_BUILD_DIR	= $(USER_BUILDDIR)/tcpdump
 TCPDUMP_DIR		= $(TCPDUMP_BUILD_DIR)/tcpdump-$(TCPDUMP_VERSION)
 
-TCPDUMP_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/tcpdump-download
-TCPDUMP_SOURCE_STAMP	= $(USER_STAMPDIR)/tcpdump-source
+TCPDUMP_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/tcpdump-$(TCPDUMP_VERSION)-download
+TCPDUMP_SOURCE_STAMP	= $(USER_STAMPDIR)/tcpdump-$(TCPDUMP_VERSION)-source
 TCPDUMP_CONFIGURE_STAMP	= $(USER_STAMPDIR)/tcpdump-configure
 TCPDUMP_BUILD_STAMP	= $(USER_STAMPDIR)/tcpdump-build
 TCPDUMP_INSTALL_STAMP	= $(STAMPDIR)/tcpdump-install
@@ -73,6 +72,7 @@ $(TCPDUMP_CONFIGURE_STAMP): $(TCPDUMP_SOURCE_STAMP) $(LIBPCAP_INSTALL_STAMP) $(O
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "====  Configure tcpdump-$(TCPDUMP_VERSION) ===="
 	$(Q) cd $(TCPDUMP_DIR) && PATH='$(CROSSBIN):$(PATH)'		\
+		$(ONIE_PKG_CONFIG)				\
 		$(TCPDUMP_DIR)/configure				\
 		--host=$(TARGET)					\
 		--prefix=/usr						\
