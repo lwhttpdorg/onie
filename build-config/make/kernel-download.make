@@ -42,6 +42,24 @@ DOWNLOAD_CLEAN += kernel-download-clean
 kernel-download-clean:
 	$(Q) rm -f $(KERNEL_DOWNLOAD_STAMP) $(DOWNLOADDIR)/$(LINUX_TARBALL)
 
+# Toolchain headers normally track the runtime kernel. Machines may pin them
+# independently without teaching old crosstool-NG about a new kernel series.
+XTOOLS_LINUX_VERSION ?= $(LINUX_VERSION)
+XTOOLS_LINUX_MINOR_VERSION ?= $(LINUX_MINOR_VERSION)
+XTOOLS_LINUX_RELEASE ?= $(LINUX_RELEASE)
+XTOOLS_LINUX_TARBALL = linux-$(XTOOLS_LINUX_RELEASE).tar.xz
+XTOOLS_KERNEL_DOWNLOAD_STAMP = $(KERNEL_DOWNLOAD_STAMP)
+ifneq ($(XTOOLS_LINUX_RELEASE),$(LINUX_RELEASE))
+XTOOLS_KERNEL_DOWNLOAD_STAMP = $(DOWNLOADDIR)/kernel-$(XTOOLS_LINUX_RELEASE)-download
+DOWNLOAD += $(XTOOLS_KERNEL_DOWNLOAD_STAMP)
+$(XTOOLS_KERNEL_DOWNLOAD_STAMP): $(PROJECT_STAMP)
+	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
+	$(Q) $(SCRIPTDIR)/fetch-package $(DOWNLOADDIR) $(UPSTREAMDIR) \
+		$(XTOOLS_LINUX_TARBALL) $(ONIE_MIRROR) \
+		https://www.kernel.org/pub/linux/kernel/v$(firstword $(subst ., ,$(XTOOLS_LINUX_VERSION))).x
+	$(Q) touch $@
+endif
+
 #-------------------------------------------------------------------------------
 #
 # Local Variables:

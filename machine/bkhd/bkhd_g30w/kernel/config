@@ -3,27 +3,48 @@
 # The base config already provides NVMe (BLK_DEV_NVME), SATA/AHCI,
 # IGB, USB storage and 8250 serial support.  The Intel I226 controllers
 # need the igc driver, which is not enabled in the ONIE base config.
+CONFIG_PCI=y
+CONFIG_NETDEVICES=y
+CONFIG_ETHERNET=y
+CONFIG_NET_VENDOR_INTEL=y
+CONFIG_ETHTOOL_NETLINK=y
+CONFIG_PTP_1588_CLOCK=y
 CONFIG_IGC=y
 
 # Required built-in for NVMe boot, independent of base config defaults.
 CONFIG_NVME_CORE=y
 CONFIG_BLK_DEV_NVME=y
 
-# Use the UEFI GOP framebuffer for the local installation console.
-# Avoid experimental EHL i915 modesetting on this kernel; boot in UEFI
-# mode so firmware supplies the framebuffer. No GPU acceleration needed.
+# Linux 6.18 supports Elkhart Lake natively: no alpha/force-probe options.
+# Use i915 KMS for HDMI/DP, with the firmware framebuffer as early fallback.
 CONFIG_EFI=y
 CONFIG_EFI_STUB=y
+CONFIG_PM=y
 CONFIG_FB=y
-CONFIG_FB_EFI=y
-# CONFIG_DRM is not set
-# CONFIG_DRM_I915 is not set
+CONFIG_SYSFB_SIMPLEFB=y
+CONFIG_DRM=y
+CONFIG_DRM_I915=y
+CONFIG_DRM_I915_FORCE_PROBE=""
+CONFIG_DRM_SIMPLEDRM=y
+# CONFIG_DRM_EFIDRM is not set
+# CONFIG_FB_EFI is not set
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_DRM_CLIENT_DEFAULT_FBDEV=y
+# CONFIG_DRM_I915_DEBUG is not set
+# CONFIG_DRM_I915_DEBUG_GEM is not set
+# CONFIG_DRM_I915_DEBUG_RUNTIME_PM is not set
 CONFIG_TTY=y
 CONFIG_VT=y
 CONFIG_VT_CONSOLE=y
 CONFIG_FRAMEBUFFER_CONSOLE=y
 CONFIG_FONT_SUPPORT=y
 CONFIG_FONT_8x16=y
+
+# Linux boot logos on the framebuffer console.
+CONFIG_LOGO=y
+CONFIG_LOGO_LINUX_MONO=y
+CONFIG_LOGO_LINUX_VGA16=y
+CONFIG_LOGO_LINUX_CLUT224=y
 
 # USB keyboard for the local ONIE shell.
 CONFIG_INPUT=y

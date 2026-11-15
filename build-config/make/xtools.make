@@ -22,7 +22,7 @@
 
 XTOOLS_CONFIG		?= conf/crosstool/gcc-$(GCC_VERSION)/$(XTOOLS_LIBC)-$(XTOOLS_LIBC_VERSION)/crosstool.$(ONIE_ARCH).config
 XTOOLS_ROOT		= $(BUILDDIR)/x-tools
-XTOOLS_VERSION		= $(ONIE_ARCH)-g$(GCC_VERSION)-lnx$(LINUX_RELEASE)-$(XTOOLS_LIBC)-$(XTOOLS_LIBC_VERSION)
+XTOOLS_VERSION		= $(ONIE_ARCH)-g$(GCC_VERSION)-lnx$(XTOOLS_LINUX_RELEASE)-$(XTOOLS_LIBC)-$(XTOOLS_LIBC_VERSION)
 XTOOLS_DIR		= $(XTOOLS_ROOT)/$(XTOOLS_VERSION)
 XTOOLS_BUILD_DIR	= $(XTOOLS_DIR)/build
 XTOOLS_INSTALL_DIR	= $(XTOOLS_DIR)/install
@@ -145,7 +145,7 @@ $(XTOOLS_PREP_STAMP): $(PROJECT_STAMP)
 
 DOWNLOAD += $(XTOOLS_DOWNLOAD_STAMP)
 xtools-download: $(XTOOLS_DOWNLOAD_STAMP)
-$(XTOOLS_DOWNLOAD_STAMP): $(XTOOLS_PREP_STAMP) | $(KERNEL_DOWNLOAD_STAMP) $(UCLIBC_DOWNLOAD_STAMP)
+$(XTOOLS_DOWNLOAD_STAMP): $(XTOOLS_PREP_STAMP) | $(XTOOLS_KERNEL_DOWNLOAD_STAMP) $(UCLIBC_DOWNLOAD_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "==== Getting upstream crosstool-NG component libraries ===="
 	$(Q) $(foreach F,$(CT_NG_COMPONENTS),echo "==== Getting upstream $(F) ====" && \
@@ -156,12 +156,12 @@ $(XTOOLS_DOWNLOAD_STAMP): $(XTOOLS_PREP_STAMP) | $(KERNEL_DOWNLOAD_STAMP) $(UCLI
 #
 # Set CT_LINUX_VERSION and CT_LINUX_V_a_b=y in the new uClibc config.
 #
-CT_LINUX_V = $(subst .,_,$(LINUX_VERSION))
+CT_LINUX_V = $(subst .,_,$(XTOOLS_LINUX_VERSION))
 $(XTOOLS_BUILD_DIR)/.config: $(XTOOLS_CONFIG) $(XTOOLS_PREP_STAMP)
 	$(Q) echo "==== Copying $(XTOOLS_CONFIG) to $@ ===="
 	$(Q) cp -v $< $(XTOOLS_BUILD_DIR)/.config
-	$(Q) echo "==== Setting kernel version to $(LINUX_VERSION).$(LINUX_MINOR_VERSION) in .config ===="
-	$(Q) sed -i 's/CT_LINUX_VERSION=.*"/CT_LINUX_VERSION="$(LINUX_VERSION).$(LINUX_MINOR_VERSION)"/g' $(XTOOLS_BUILD_DIR)/.config
+	$(Q) echo "==== Setting toolchain headers to $(XTOOLS_LINUX_RELEASE) in .config ===="
+	$(Q) sed -i 's/CT_LINUX_VERSION=.*"/CT_LINUX_VERSION="$(XTOOLS_LINUX_VERSION).$(XTOOLS_LINUX_MINOR_VERSION)"/g' $(XTOOLS_BUILD_DIR)/.config
 	$(Q) sed -i 's/CT_LINUX_V_$(CT_LINUX_V) is not set/CT_LINUX_V_$(CT_LINUX_V)=y/g' $(XTOOLS_BUILD_DIR)/.config
 
 xtools-config: $(XTOOLS_BUILD_DIR)/.config $(CROSSTOOL_NG_BUILD_STAMP)

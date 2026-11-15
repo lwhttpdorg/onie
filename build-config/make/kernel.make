@@ -117,6 +117,11 @@ kernel-build: $(KERNEL_BUILD_STAMP)
 $(KERNEL_BUILD_STAMP): $(KERNEL_SOURCE_STAMP) $(LINUX_NEW_FILES) $(LINUXDIR)/.config | $(XTOOLS_BUILD_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "==== Building cross linux ===="
+ifeq ($(KERNEL_OLDDEFCONFIG),yes)
+# Opt-in for migrated configs only; use the target compiler, not host defaults.
+	$(Q) PATH='$(CROSSBIN):$(PATH)' $(MAKE) -C $(LINUXDIR) \
+		ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(CROSSPREFIX) olddefconfig
+endif
 	$(Q) PATH='$(CROSSBIN):$(PATH)'		\
 	    $(MAKE) -C $(LINUXDIR)		\
 		ARCH=$(KERNEL_ARCH)		\

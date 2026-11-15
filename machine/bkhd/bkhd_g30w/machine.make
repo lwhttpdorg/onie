@@ -10,6 +10,15 @@
 
 ONIE_ARCH ?= x86_64
 
+# Runtime kernel only. Keep the established ct-ng/uClibc header ABI separate.
+LINUX_VERSION = 6.18
+LINUX_MINOR_VERSION = 63
+XTOOLS_LINUX_VERSION = 5.4
+XTOOLS_LINUX_MINOR_VERSION = 86
+XTOOLS_LINUX_RELEASE = $(XTOOLS_LINUX_VERSION).$(XTOOLS_LINUX_MINOR_VERSION)
+# Normalize the migrated seed with the actual cross compiler at build time.
+KERNEL_OLDDEFCONFIG = yes
+
 VENDOR_REV ?= 0
 
 # Translate hardware revision to ONIE hardware revision
