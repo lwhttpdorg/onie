@@ -157,12 +157,19 @@ $(XTOOLS_DOWNLOAD_STAMP): $(XTOOLS_PREP_STAMP) | $(XTOOLS_KERNEL_DOWNLOAD_STAMP)
 # Set CT_LINUX_VERSION and CT_LINUX_V_a_b=y in the new uClibc config.
 #
 CT_LINUX_V = $(subst .,_,$(XTOOLS_LINUX_VERSION))
+ifneq ($(filter 6.%,$(XTOOLS_LINUX_VERSION)),)
+# Linux 6.x has headers_install but no headers_check target.
+$(XTOOLS_BUILD_DIR)/.config: make/xtools.make
+endif
 $(XTOOLS_BUILD_DIR)/.config: $(XTOOLS_CONFIG) $(XTOOLS_PREP_STAMP)
 	$(Q) echo "==== Copying $(XTOOLS_CONFIG) to $@ ===="
-	$(Q) cp -v $< $(XTOOLS_BUILD_DIR)/.config
+	$(Q) cp -v $(XTOOLS_CONFIG) $@
 	$(Q) echo "==== Setting toolchain headers to $(XTOOLS_LINUX_RELEASE) in .config ===="
 	$(Q) sed -i 's/CT_LINUX_VERSION=.*"/CT_LINUX_VERSION="$(XTOOLS_LINUX_VERSION).$(XTOOLS_LINUX_MINOR_VERSION)"/g' $(XTOOLS_BUILD_DIR)/.config
 	$(Q) sed -i 's/CT_LINUX_V_$(CT_LINUX_V) is not set/CT_LINUX_V_$(CT_LINUX_V)=y/g' $(XTOOLS_BUILD_DIR)/.config
+ifneq ($(filter 6.%,$(XTOOLS_LINUX_VERSION)),)
+	$(Q) sed -i 's/^CT_KERNEL_LINUX_INSTALL_CHECK=y$$/# CT_KERNEL_LINUX_INSTALL_CHECK is not set/' $@
+endif
 
 xtools-config: $(XTOOLS_BUILD_DIR)/.config $(CROSSTOOL_NG_BUILD_STAMP)
 	$(Q) cd $(XTOOLS_BUILD_DIR) && $(CROSSTOOL_NG_DIR)/ct-ng menuconfig

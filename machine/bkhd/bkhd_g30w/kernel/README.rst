@@ -1,32 +1,30 @@
-g30w: Linux 6.18.63 migration
+g30w: Linux 6.18.64 migration
 ===========================
 
 Scope
 -----
 
-Only bkhd_g30w selects runtime Linux 6.18.63. The shared default and
-accton_as7326_56x remain at 5.4.86. No existing 5.4 configuration or patch
-was changed. No build, container build, installation or flashing was performed.
+G30W, AS5812-54X, and AS7326-56X use Linux 6.18.64 for the runtime kernel
+and toolchain headers. The shared default is 5.4.86.
 
 Source provenance
 -----------------
 
-Downloaded on 2026-11-15 from:
+Downloaded on 2026-11-18 from:
 
-* https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.18.63.tar.xz
-* https://www.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc
+* https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.64.tar.xz
+* https://cdn.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc
 
 The archive matched the SHA256 entry in the official HTTPS checksum list:
 
-  81764a545072d160748beff4d9de2e7d95aa9f16e8261110288f067a2cc61d71
+  020d45510c539972e6f14c5c71566878d3b7ef56fb082b3e09134f2ebaade562
 
 SHA1 computed locally from that verified archive (for ONIE fetch-package):
 
-  8f2d4e74265d98b03465221d2ee2fc5b7de010d8
+  c936a476f7a890d6e468212f2c251eedb2240347
 
-Both checksum files are in upstream/. The verified archive is cached locally
-in build/download/linux-6.18.63.tar.xz (ignored by Git). The extracted source
-Makefile also reports VERSION=6, PATCHLEVEL=18, SUBLEVEL=63. The signature on
+Both checksum files are in upstream/. The extracted source Makefile reports
+VERSION=6, PATCHLEVEL=18, SUBLEVEL=64. The signature on
 the checksum list was NOT independently verified with a trusted OpenPGP key.
 
 Toolchain and build rules
@@ -37,23 +35,19 @@ Documentation/process/changes.rst require GCC >= 8.1 and binutils >= 2.30
 on x86. Existing GCC 8.3.0 and binutils 2.32 meet those minimum versions.
 This is not evidence of a successful build with that toolchain.
 
-Keep crosstool-NG 1.24 / uClibc-ng 1.0.38 and Linux 5.4.86 userspace headers.
-The XTOOLS_LINUX_* overrides separate header download, CT_LINUX_VERSION and
-toolchain identity from the runtime kernel. g30w can reuse the existing
-5.4.86-header toolchain; other machines retain their old defaults/identity.
-Old headers do not prevent building a newer kernel, which uses its own
-internal headers. This does not enable new userspace APIs in old libc.
+The toolchain uses crosstool-NG 1.24 and uClibc-ng 1.0.38 with the headers
+from Linux 6.18.64. Both builds use the same verified source archive.
+The new header version changes the toolchain cache key.
 
 Runtime version naming remains LINUX_VERSION=6.18 plus
-LINUX_MINOR_VERSION=63, yielding linux-6.18.63.tar.xz and the v6.x URL.
-kernel.make resolves conf/kernel/6.18.63 relative to build-config/ and
-patches/kernel/6.18.63 relative to the repository. The common series contains
+LINUX_MINOR_VERSION=64, yielding linux-6.18.64.tar.xz and the v6.x URL.
+kernel.make resolves conf/kernel/6.18.64 relative to build-config/ and
+patches/kernel/6.18.64 relative to the repository. The common series contains
 comments only. Upstream subcmd no longer retries realloc on the old pointer,
 so the 5.4 subcmd patch was deliberately NOT carried forward.
 
-g30w alone opts into olddefconfig before the normal kernel build, using the
-same ARCH, CROSS_COMPILE and compiler PATH as the build. This happens only
-when the user builds: the migration did not execute it. Its purpose is to
+All three machines run olddefconfig before the normal kernel build, using
+the same ARCH, CROSS_COMPILE and compiler PATH as the build. Its purpose is to
 resolve new defaults, selected symbols and compiler capabilities without
 interactive prompts. The initial merge remains merge_config.sh -m.
 
@@ -95,15 +89,16 @@ Non-building validation
 From the repository root, run the pure static checker against an extracted,
 verified official source tree::
 
-  python3 machine/bkhd/bkhd_g30w/kernel/check-config.py /path/to/linux-6.18.63
+  python3 machine/bkhd/bkhd_g30w/kernel/check-config.py /path/to/linux-6.18.64
 
 It checks source version, symbol existence/duplicates, merge-only built-in
-requests, and isolated Make fragment evaluation for g30w and
-accton_as7326_56x. It never includes the project top-level Makefile, never
+requests, and isolated Make fragment evaluation for G30W, AS5812-54X,
+AS7326-56X, and the 5.4.86 AS5812-54T. It never includes the project top-level Makefile, never
 runs olddefconfig or compiler probes, and never builds anything. Symbol
 existence and textual merging do NOT prove satisfiable Kconfig dependencies.
 
-Also verified both archive checksums and git diff --check. Still untested:
+Also verified both archive checksums, x86 userspace header export with
+`headers_install`, and git diff --check. Still untested:
 cross-compiler configuration resolution, kernel/toolchain compilation,
 image size and packaging, boot, i915 framebuffer handoff/HDMI/DP, all four
 I226 ports, NVMe/SATA discovery, USB keyboard and firmware/power management.

@@ -1,2 +1,2 @@
-# Linux 6.18.63: no common patches required for g30w.
+# Linux 6.18.64: no common patches required for g30w.
 # Do not carry 5.4's subcmd realloc workaround: the retry code is gone upstream.

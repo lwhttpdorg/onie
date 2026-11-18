@@ -23,7 +23,8 @@ LINUX_RELEASE		?= $(LINUX_VERSION).$(LINUX_MINOR_VERSION)
 LINUX_TARBALL		?= linux-$(LINUX_RELEASE).tar.xz
 export LINUX_TARBALL
 export LINUX_RELEASE
-LINUX_TARBALL_URLS	+= $(ONIE_MIRROR) https://www.kernel.org/pub/linux/kernel/v$(LINUX_MAJOR_VERSION).x
+KERNEL_ORG_DOWNLOAD = https://cdn.kernel.org/pub/linux/kernel
+LINUX_TARBALL_URLS	+= $(KERNEL_ORG_DOWNLOAD)/v$(LINUX_MAJOR_VERSION).x $(ONIE_MIRROR)
 
 KERNEL_DOWNLOAD_STAMP	= $(DOWNLOADDIR)/kernel-$(LINUX_RELEASE)-download
 
@@ -55,8 +56,8 @@ DOWNLOAD += $(XTOOLS_KERNEL_DOWNLOAD_STAMP)
 $(XTOOLS_KERNEL_DOWNLOAD_STAMP): $(PROJECT_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) $(SCRIPTDIR)/fetch-package $(DOWNLOADDIR) $(UPSTREAMDIR) \
-		$(XTOOLS_LINUX_TARBALL) $(ONIE_MIRROR) \
-		https://www.kernel.org/pub/linux/kernel/v$(firstword $(subst ., ,$(XTOOLS_LINUX_VERSION))).x
+		$(XTOOLS_LINUX_TARBALL) \
+		$(KERNEL_ORG_DOWNLOAD)/v$(firstword $(subst ., ,$(XTOOLS_LINUX_VERSION))).x $(ONIE_MIRROR)
 	$(Q) touch $@
 endif
 

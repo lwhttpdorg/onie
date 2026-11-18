@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Non-building checks; pass the extracted official Linux 6.18.63 source tree.
+"""Non-building checks; pass the extracted official Linux 6.18.64 source tree.
 
 Only reads Kconfig, runs merge_config.sh -m in a temporary directory, and
 evaluates isolated make fragments with a no-recipe target. Does not run
@@ -16,9 +16,9 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[4]
 SOURCE = pathlib.Path(sys.argv[1]).resolve()
 version = (SOURCE / "Makefile").read_text()
-for key, value in (("VERSION", "6"), ("PATCHLEVEL", "18"), ("SUBLEVEL", "63")):
+for key, value in (("VERSION", "6"), ("PATCHLEVEL", "18"), ("SUBLEVEL", "64")):
     assert re.search(r"^" + key + r"\s*=\s*" + value + r"\s*$", version, re.M)
-BASE = ROOT / "build-config/conf/kernel/6.18.63/linux.x86_64.config"
+BASE = ROOT / "build-config/conf/kernel/6.18.64/linux.x86_64.config"
 FRAGMENT = pathlib.Path(__file__).with_name("config")
 
 
@@ -98,8 +98,10 @@ with tempfile.TemporaryDirectory(prefix="onie-g30w-config-") as directory:
 
 # Never include the top-level makefile (which has parse-time side effects).
 for machine, runtime in (
-    ("bkhd/bkhd_g30w", "6.18.63"),
-    ("accton/accton_as7326_56x", "5.4.86"),
+    ("bkhd/bkhd_g30w", "6.18.64"),
+    ("accton/accton_as5812_54x", "6.18.64"),
+    ("accton/accton_as7326_56x", "6.18.64"),
+    ("accton/accton_as5812_54t", "5.4.86"),
 ):
     harness = f""".DEFAULT_GOAL := inspect
 DOWNLOADDIR := /unused/download
@@ -129,11 +131,12 @@ inspect: ;
     result = next(
         line[7:] for line in output.splitlines() if line.startswith("RESULT=")
     )
+    series = runtime.rsplit(".", 1)[0].replace(".", "_")
     expected = (
-        f"{runtime}|linux-{runtime}.tar.xz|5.4.86|"
-        "x86_64-g8.3.0-lnx5.4.86-uClibc-ng-1.0.38|"
-        "/unused/download/kernel-5.4.86-download|5_4|"
-        + ("yes" if machine.startswith("bkhd/") else "")
+        f"{runtime}|linux-{runtime}.tar.xz|{runtime}|"
+        f"x86_64-g8.3.0-lnx{runtime}-uClibc-ng-1.0.38|"
+        f"/unused/download/kernel-{runtime}-download|{series}|"
+        + ("yes" if runtime == "6.18.64" else "")
     )
     assert result == expected, (result, expected)
     print(machine, result, "PASS")
