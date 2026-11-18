@@ -17,12 +17,17 @@ esac
 
 workspace="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 project_id="$(printf '%s\n' "${workspace}" | sha256sum | cut -c1-12)"
-name="onie-builder-${project_id}"
-image="onie-builder-${project_id}:2026.08"
+name="${BUILDER_NAME:-onie-builder}"
+image="${name}:2026.08"
 docker="${DOCKER:-docker}"
 machine="${2:-bkhd_g30w}"
 vendor="${3-bkhd}"
 jobs="${4:-$(nproc)}"
+
+if [[ ! "${name}" =~ ^[a-z0-9]+([._-][a-z0-9]+)*$ ]]; then
+    echo "Invalid BUILDER_NAME: ${name}" >&2
+    exit 2
+fi
 
 if [[ ! "${machine}" =~ ^[[:alnum:]_-]+$ || ! "${jobs}" =~ ^[1-9][0-9]*$ ]]; then
     echo "Invalid machine or job count" >&2
@@ -69,7 +74,7 @@ container_exists() { "${docker}" container inspect "${name}" >/dev/null 2>&1; }
 if container_exists; then
     scope="$("${docker}" inspect --format '{{index .Config.Labels "org.onie.project"}} {{index .Config.Labels "org.onie.owner"}} {{index .Config.Labels "org.onie.role"}}' "${name}")"
     [[ "${scope}" == "${project_id} $(id -u) builder" ]] || {
-        echo "Container ${name} belongs to another project or user" >&2
+        echo "Container ${name} belongs to another project or user. Set BUILDER_NAME to a different name." >&2
         exit 1
     }
 fi

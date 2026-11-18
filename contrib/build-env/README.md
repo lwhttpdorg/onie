@@ -13,8 +13,14 @@ make ONIE_MACHINE=accton_as7326_56x ONIE_MACHINEROOT=accton build
 `make ONIE_MACHINE=kvm_x86_64 ONIE_MACHINEROOT= build`. Set `JOBS` to override
 the detected number of parallel jobs.
 
-The tool image installs the build dependencies once. A project-scoped,
-persistent container is created with the checkout mounted **read-only** at
+The default container name is `onie-builder` and its image is
+`onie-builder:2026.08`. Set `BUILDER_NAME` to a distinct name for each
+additional checkout, for example `make BUILDER_NAME=onie-builder-test build`.
+Use the same name for that checkout's download, build, and cleanup commands.
+The first build with the new name creates a fresh container cache.
+
+The tool image installs the build dependencies once. A persistent container
+is created with the checkout mounted **read-only** at
 `/src`. Before each build, `rsync` updates a separate writable `/build/onie`
  tree in that container, including Git metadata for ONIE release tags;
  `/build/onie/build` and other generated files are excluded from synchronization

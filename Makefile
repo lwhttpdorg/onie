@@ -24,10 +24,10 @@ export V
 ONIE_MIRROR ?=
 export ONIE_MIRROR
 DOCKER ?= docker
-PROJECT_ID := $(shell pwd -P | sha256sum | cut -c1-12)
-BUILDER_IMAGE := onie-builder-$(PROJECT_ID):2026.08
+BUILDER_NAME ?= onie-builder
+BUILDER_IMAGE := $(BUILDER_NAME):2026.08
 BUILDER := $(CURDIR)/contrib/build-env/build.sh
-export DOCKER
+export DOCKER BUILDER_NAME
 
 .PHONY: all docker-image download build clean distclean
 all: build
