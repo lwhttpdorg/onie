@@ -383,6 +383,19 @@ net_intf()
     echo $intf_list
 }
 
+# Check carrier when the driver reports it. Some interfaces report an
+# unknown operational state and do not expose carrier information.
+net_intf_has_link()
+{
+    local netdev="/sys/class/net/$1"
+    local carrier state
+
+    carrier=$(cat "$netdev/carrier" 2>/dev/null) || carrier=
+    [ "$carrier" = "0" ] && return 1
+    state=$(cat "$netdev/operstate" 2>/dev/null) || return 1
+    [ "$state" = "up" ] || [ "$state" = "unknown" ]
+}
+
 str2hex()
 {
     echo -n "$1" | hexdump -ve '1/1 "%.2x"'

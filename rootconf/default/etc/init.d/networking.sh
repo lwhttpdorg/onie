@@ -123,29 +123,23 @@ config_ethmgmt_fallback()
 
 }
 
-# Check the operational state of the specified interface before trying
-# DHCP.  From linux/Documentation/networking/operstates.txt, the
-# appropriate states are "up" and "unknown" for DHCP.
-check_link_up()
+# Give all interfaces a shared window for link negotiation.
+wait_for_links()
 {
-    local intf=$1
-    local operstate="/sys/class/net/${intf}/operstate"
-
-    _log_info_msg "Info: ${intf}:  Checking link... "
+    local pending="$*"
+    local intf down
     local i=0
-    [ -r $operstate ] && while [ $i -lt 100 ] ; do
-        intf_operstate="$(cat $operstate)"
-        if [ "$intf_operstate" = "up" -o "$intf_operstate" = "unknown" ] ; then
-            _log_info_msg "up.\n"
-            return 0
-        fi
-        sleep 0.1
-        i=$(( $i + 1 ))
-    done
 
-    # no link
-    _log_info_msg "down.\n"
-    return 1
+    while [ "$i" -lt 100 ] ; do
+        down=
+        for intf in $pending ; do
+            net_intf_has_link "$intf" || down="$down $intf"
+        done
+        [ -n "$down" ] || return 0
+        pending="$down"
+        sleep 0.1
+        i=$((i + 1))
+    done
 }
 
 # Configure the management interface
@@ -163,9 +157,13 @@ config_ethmgmt()
     # Bring up all the interfaces for the subsequent methods.
     for intf in $intf_list ; do
         cmd_run ifconfig $intf up
+    done
+    wait_for_links $intf_list
+
+    for intf in $intf_list ; do
         params="$intf $*"
         eval "result_${intf}=0"
-        check_link_up $intf || {
+        net_intf_has_link "$intf" || {
             log_console_msg "${intf}: link down.  Skipping configuration."
             eval "result_${intf}=1"
             continue
