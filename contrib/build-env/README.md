@@ -4,12 +4,12 @@ From the ONIE fork's repository root, with Docker installed and available to
 your user:
 
 ```sh
-make MODEL=g30w build
-make MODEL=as7326-56x build
+make ONIE_MACHINE=bkhd_g30w ONIE_MACHINEROOT=bkhd build
+make ONIE_MACHINE=accton_as5812_54x ONIE_MACHINEROOT=accton build
+make ONIE_MACHINE=accton_as7326_56x ONIE_MACHINEROOT=accton build
 ```
 
-`g30w` uses `machine/bkhd/bkhd_g30w`; `as7326-56x` uses the upstream Accton
-machine. The default is `g30w`. For another upstream platform, use
+`make build` defaults to G30W. For a platform directly under `machine/`, use
 `make ONIE_MACHINE=kvm_x86_64 ONIE_MACHINEROOT= build`. Set `JOBS` to override
 the detected number of parallel jobs.
 
