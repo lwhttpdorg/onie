@@ -47,6 +47,10 @@ PHONY += kernel-build kernel-install kernel-clean
 
 LINUX_BOOTDIR   = $(LINUXDIR)/arch/$(KERNEL_ARCH)/boot
 
+# An explicit LOCALVERSION suppresses Kbuild's fallback '+' when
+# CONFIG_LOCALVERSION_AUTO is disabled. Keep the suffix from the kernel config.
+KERNEL_MAKE_ARGS = ARCH=$(KERNEL_ARCH) LOCALVERSION="$(LOCALVERSION)"
+
 #-------------------------------------------------------------------------------
 
 kernel: $(KERNEL_STAMP)
@@ -96,15 +100,15 @@ $(LINUXDIR)/.config : $(LINUX_CONFIG) $(MACHINE_KERNEL_PATCHDIR)/config $(KERNEL
 
 # Interactive update. User selects options, or not
 kernel-old-config: $(LINUXDIR)/.config
-	$(Q) $(MAKE) -C $(LINUXDIR) ARCH=$(KERNEL_ARCH) oldconfig
+	$(Q) $(MAKE) -C $(LINUXDIR) $(KERNEL_MAKE_ARGS) oldconfig
 
 # Update kernel config - set all defaults, non-interactive
 kernel-old-defconfig: $(LINUXDIR)/.config
-	$(Q) $(MAKE) -C $(LINUXDIR) ARCH=$(KERNEL_ARCH) olddefconfig
+	$(Q) $(MAKE) -C $(LINUXDIR) $(KERNEL_MAKE_ARGS) olddefconfig
 
 # User can browse for options
 kernel-config: $(LINUXDIR)/.config
-	$(Q) $(MAKE) -C $(LINUXDIR) ARCH=$(KERNEL_ARCH) menuconfig
+	$(Q) $(MAKE) -C $(LINUXDIR) $(KERNEL_MAKE_ARGS) menuconfig
 
 ifndef MAKE_CLEAN
 LINUX_NEW_FILES	= \
@@ -114,17 +118,17 @@ LINUX_NEW_FILES	= \
 endif
 
 kernel-build: $(KERNEL_BUILD_STAMP)
-$(KERNEL_BUILD_STAMP): $(KERNEL_SOURCE_STAMP) $(LINUX_NEW_FILES) $(LINUXDIR)/.config | $(XTOOLS_BUILD_STAMP)
+$(KERNEL_BUILD_STAMP): $(lastword $(MAKEFILE_LIST)) $(KERNEL_SOURCE_STAMP) $(LINUX_NEW_FILES) $(LINUXDIR)/.config | $(XTOOLS_BUILD_STAMP)
 	$(Q) rm -f $@ && eval $(PROFILE_STAMP)
 	$(Q) echo "==== Building cross linux ===="
 ifeq ($(KERNEL_OLDDEFCONFIG),yes)
 # Opt-in for migrated configs only; use the target compiler, not host defaults.
 	$(Q) PATH='$(CROSSBIN):$(PATH)' $(MAKE) -C $(LINUXDIR) \
-		ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(CROSSPREFIX) olddefconfig
+		$(KERNEL_MAKE_ARGS) CROSS_COMPILE=$(CROSSPREFIX) olddefconfig
 endif
 	$(Q) PATH='$(CROSSBIN):$(PATH)'		\
 	    $(MAKE) -C $(LINUXDIR)		\
-		ARCH=$(KERNEL_ARCH)		\
+		$(KERNEL_MAKE_ARGS)		\
 		CROSS_COMPILE=$(CROSSPREFIX)	\
 		MODULE_SIG_KEY_SRCPREFIX=$(ONIE_MODULE_SIG_KEY_SRCPREFIX)/ \
 		V=$(V) 				\
@@ -137,7 +141,7 @@ $(KERNEL_DTB_INSTALL_STAMP): $(KERNEL_BUILD_STAMP)
 	$(Q) echo "==== Building device tree blob for $(PLATFORM) ===="
 	$(Q) PATH='$(CROSSBIN):$(PATH)'		\
 	    $(MAKE) -C $(LINUXDIR)		\
-		ARCH=$(KERNEL_ARCH)		\
+		$(KERNEL_MAKE_ARGS)		\
 		CROSS_COMPILE=$(CROSSPREFIX)	\
 		V=$(V) 				\
 		$(KERNEL_DTB)

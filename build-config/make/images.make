@@ -478,7 +478,9 @@ $(RECOVERY_INITRD_STAMP): $(IMAGE_UPDATER_STAMP)
 # Make hybrid .iso image containing the ONIE kernel and recovery intrd
 recovery-iso: $(RECOVERY_ISO_STAMP)
 $(RECOVERY_ISO_STAMP): $(GRUB_INSTALL_STAMP) $(GRUB_HOST_INSTALL_STAMP) $(RECOVERY_INITRD_STAMP) \
-			$(RECOVERY_CONF_DIR)/grub-iso.cfg
+			$(SCRIPTDIR)/onie-mk-iso.sh $(RECOVERY_CONF_DIR)/grub-iso.cfg \
+			$(RECOVERY_CONF_DIR)/xorriso-options-bios.cfg \
+			$(RECOVERY_CONF_DIR)/xorriso-options-uefi.cfg
 	$(Q) echo "==== Create $(MACHINE_PREFIX) ONIE Recovery Hybrid iso ===="
 	$(Q) Q=$(Q) CONSOLE_SPEED=$(CONSOLE_SPEED) \
 	     CONSOLE_DEV=$(CONSOLE_DEV) \

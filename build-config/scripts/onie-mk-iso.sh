@@ -173,16 +173,13 @@ case "$ARCH" in
 esac
 
 RECOVERY_ISO_SYSROOT="$RECOVERY_DIR/iso-sysroot"
-RECOVERY_CORE_IMG="$RECOVERY_DIR/core.img"
 RECOVERY_EFI_DIR="$RECOVERY_DIR/EFI"
 RECOVERY_EFI_BOOT_DIR="$RECOVERY_EFI_DIR/BOOT"
 RECOVERY_EFI_BOOTX86_IMG="$RECOVERY_EFI_BOOT_DIR/boot${EFI_INFIX}.efi"
 RECOVERY_GRUBX86_IMG="$RECOVERY_DIR/grub${EFI_INFIX}.efi"
 RECOVERY_EFI_GRUBX86_IMG="$RECOVERY_EFI_BOOT_DIR/grub${EFI_INFIX}.efi"
 RECOVERY_ELTORITO_IMG="$RECOVERY_ISO_SYSROOT/boot/eltorito.img"
-RECOVERY_EMBEDDED_IMG="$RECOVERY_DIR/embedded.img"
 RECOVERY_UEFI_IMG="$RECOVERY_ISO_SYSROOT/boot/efi.img"
-RECOVERY_XORRISO_OPTIONS="$RECOVERY_DIR/xorriso-options.cfg"
 
 # Start clean
 rm -rf $RECOVERY_ISO_SYSROOT $RECOVERY_ISO_IMAGE
@@ -214,15 +211,14 @@ if [ "$FIRMWARE_TYPE" != "uefi" ] ; then
 
 	# Generate legacy BIOS eltorito format GRUB image
 	$GRUB_HOST_BIN_I386_DIR/grub-mkimage \
-		--format=i386-pc \
+		--format=i386-pc-eltorito \
 		--directory=$GRUB_TARGET_LIB_I386_DIR \
 		--prefix=/boot/grub \
-		--output=$RECOVERY_CORE_IMG \
+		--output=$RECOVERY_ELTORITO_IMG \
 		part_msdos part_gpt iso9660 biosdisk
-	cat $GRUB_TARGET_LIB_I386_DIR/cdboot.img $RECOVERY_CORE_IMG > $RECOVERY_ELTORITO_IMG
 
-	# Generate legacy BIOS MBR format GRUB image
-	cat $GRUB_TARGET_LIB_I386_DIR/boot.img $RECOVERY_CORE_IMG > $RECOVERY_EMBEDDED_IMG
+	# The hybrid MBR loads the same GRUB image as El Torito.
+	cp "$GRUB_TARGET_LIB_I386_DIR/boot_hybrid.img" "$RECOVERY_DIR/boot_hybrid.img"
 fi
 
 if [ "$UEFI_ENABLE" = "yes" ] ; then
@@ -326,26 +322,21 @@ if [ "$UEFI_ENABLE" = "yes" ] ; then
     $MCOPY -s -i $RECOVERY_UEFI_IMG $RECOVERY_EFI_DIR '::/'
 fi
 
-# Combine the legacy BIOS and UEFI GRUB images images into an ISO.
-if [ "$FIRMWARE_TYPE" = "uefi" ] ; then
-	cp ${RECOVERY_CONF_DIR}/xorriso-options-uefi.cfg ${RECOVERY_XORRISO_OPTIONS}
-elif [ "$FIRMWARE_TYPE" = "auto" ] ; then
-    rm -f ${RECOVERY_XORRISO_OPTIONS} && touch ${RECOVERY_XORRISO_OPTIONS}
-	git merge-file -p --union ${RECOVERY_CONF_DIR}/xorriso-options-bios.cfg \
-            ${RECOVERY_XORRISO_OPTIONS} \
-            ${RECOVERY_CONF_DIR}/xorriso-options-uefi.cfg \
-            > ${RECOVERY_XORRISO_OPTIONS}
-else
-	cp ${RECOVERY_CONF_DIR}/xorriso-options-bios.cfg ${RECOVERY_XORRISO_OPTIONS}
+# The GRUB hybrid MBR points to the first El Torito image, so add BIOS first.
+set --
+if [ "$FIRMWARE_TYPE" != "uefi" ] ; then
+    set -- "$@" -options_from_file "$RECOVERY_CONF_DIR/xorriso-options-bios.cfg"
+fi
+if [ "$FIRMWARE_TYPE" = "uefi" ] || [ "$FIRMWARE_TYPE" = "auto" ] ; then
+    set -- "$@" -options_from_file "$RECOVERY_CONF_DIR/xorriso-options-uefi.cfg"
 fi
 
-# -return_with SORRY 0: the GRUB isohybrid system area (embedded.img)
-# leaves non-zero bytes in the MBR partition-table area.  xorriso >= 1.5.5
-# scans those as bogus partition extents and raises SORRY events, which by
-# default make it exit with 32 even though the ISO was written completely.
-cd $RECOVERY_DIR && $XORRISO -return_with SORRY 0 -outdev $RECOVERY_ISO_IMAGE \
-    -map $RECOVERY_ISO_SYSROOT / \
-    -options_from_file $RECOVERY_XORRISO_OPTIONS
+cd "$RECOVERY_DIR"
+"$XORRISO" -outdev "$RECOVERY_ISO_IMAGE" -map "$RECOVERY_ISO_SYSROOT" / \
+    -volid ONIE_RECOVERY -report_about SORRY \
+    -find / -exec sort_weight 0 -- \
+    -find /boot -exec sort_weight 1 -- \
+    "$@" -boot_image any cat_path=/boot/boot.cat -commit -end
 
 if [ "$UEFI_ENABLE" = "yes" ] ; then
     # The next step is to add a MS-DOS partition table with one entry for
@@ -360,7 +351,7 @@ if [ "$UEFI_ENABLE" = "yes" ] ; then
     # UEFI firmware will recognize as a UEFI bootable image.
 
     # sanity check
-    $XORRISO -return_with SORRY 0 -indev $RECOVERY_ISO_IMAGE \
+    $XORRISO -indev $RECOVERY_ISO_IMAGE \
         -find /boot/efi.img -name efi.img -exec report_lba -- 2> /dev/null | grep -q efi.img || {
         echo "ERROR: Unable to find efi.img in the .ISO image"
         exit 1
@@ -372,7 +363,7 @@ if [ "$UEFI_ENABLE" = "yes" ] ; then
     # The output of the xorriso find command looks like:
     # Report layout: xt , Startlba ,   Blocks , Filesize , ISO image path
     # File data lba:  0 ,      132 ,       80 ,   163840 , '/boot/efi.img'
-    EFI_IMG_START_BLOCK=$($XORRISO -return_with SORRY 0 -indev $RECOVERY_ISO_IMAGE \
+    EFI_IMG_START_BLOCK=$($XORRISO -indev $RECOVERY_ISO_IMAGE \
         -find /boot/efi.img -name efi.img -exec report_lba -- 2> /dev/null | \
         grep efi.img | awk '{ print $6 }')
     EFI_IMG_START_SECTOR=$(( $EFI_IMG_START_BLOCK * 2048 / 512 ))
