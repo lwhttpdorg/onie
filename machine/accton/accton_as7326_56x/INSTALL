@@ -52,38 +52,15 @@ output after inserting the USB stick into your work station.
 Booting from USB stick
 ----------------------
 
-To enable booting from USB in the BIOS:
+The AS7326-56X recovery image requires UEFI boot mode.
 
-1. Insert the USB stick
+1. Insert the USB stick and power on the switch.
 
-2. Power on the switch and enter the BIOS configuration
+2. Open the firmware boot menu and select the UEFI entry for the USB
+   stick. If it is missing, enable UEFI boot in the firmware setup and
+   reopen the boot menu.
 
-3. Set the hard drive boot order:
-
-  In "Boot Option #1" select the device that corresponds to your
-  device::
-
-    Boot-->Boot Option Priorities-->Boot Option #1
-
-  If the device name is not listed in "Boot Option #1", please
-  check the priorities in the hard drive boot order::
-
-    Boot-->Hard Drive BBS Priorities-->Boot Option #1
-
-  Taking ``JetFlashTranscend 8GB 8.07`` as an example, the boot
-  order will look like following::
-
-    Boot Option Priorities
-    Boot Option #1          [JetFlashTranscend 8...]
-    Boot Option #2          [ATP ATP IG eUSB 1100]
-    Boot Option #3          [IBA GE Slot 00A0 v1543]
-    Boot Option #4          [UEFI: Built-in EFI ...]
-
-4. Save and Exit the BIOS configuration
-
-5. After several seconds, you should see:
-
-                     GNU GRUB  version 2.02~beta2+e4a1fe391
+3. When GRUB starts, you should see:
 
  +----------------------------------------------------------------------------+
  |*ONIE: Rescue                                                               |

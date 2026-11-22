@@ -24,6 +24,7 @@ endif
 VENDOR_ID = 259
 
 UEFI_ENABLE = yes
+FIRMWARE_TYPE = uefi
 PXE_EFI64_ENABLE = yes
 
 # Console parameters
